@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HelloQt", "HelloQt.vcxproj", "{E9437F42-2BB7-495D-82A1-B480D98C34C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug NCAD|x64 = Debug NCAD|x64
+		Debug NCAD|x86 = Debug NCAD|x86
+		Release NCAD|x64 = Release NCAD|x64
+		Release NCAD|x86 = Release NCAD|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Debug NCAD|x64.ActiveCfg = Debug NCAD|x64
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Debug NCAD|x64.Build.0 = Debug NCAD|x64
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Debug NCAD|x86.ActiveCfg = Debug NCAD|Win32
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Debug NCAD|x86.Build.0 = Debug NCAD|Win32
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Release NCAD|x64.ActiveCfg = Release NCAD|x64
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Release NCAD|x64.Build.0 = Release NCAD|x64
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Release NCAD|x86.ActiveCfg = Release NCAD|Win32
+		{E9437F42-2BB7-495D-82A1-B480D98C34C9}.Release NCAD|x86.Build.0 = Release NCAD|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A3FA184B-B917-4816-9764-6086D325E66F}
+	EndGlobalSection
+EndGlobal
