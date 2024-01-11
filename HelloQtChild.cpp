@@ -10,7 +10,7 @@ HelloQtChild::HelloQtChild(QWidget *parent)
   ui.setupUi(this);
   mediator.SetUI(&ui);
   QObject::connect(ui.pushButton, SIGNAL(clicked()), this, SLOT(DrawPolyline()));
-  QObject::connect(ui.tableWidget, SIGNAL(cellChanged(int, int)), this, SLOT(UpdatePolyline()));
+  QObject::connect(ui.tableWidget, SIGNAL(cellChanged(int, int)), this, SLOT(UpdatePolyline(int, int)));
 }
 
 HelloQtChild::~HelloQtChild()
@@ -76,7 +76,7 @@ void HelloQtChild::DrawPolyline()
 	polyline->close();
 }
 
-void HelloQtChild::UpdatePolyline()
+void HelloQtChild::UpdatePolyline(int row, int column)
 {
 	bool first_found = false;
 	nds_name ss;
@@ -99,11 +99,40 @@ void HelloQtChild::UpdatePolyline()
 								first_found = true;
 								NcDb3dPolyline* polyline;
 								Nano::ErrorStatus status = ncdbOpenObject(polyline, id, NcDb::kForWrite);
+								NcDbObjectIterator* iterator = polyline->vertexIterator();
 
-								status = polyline->erase();
 								status = polyline->close();
+								NcDb3dPolylineVertex* vertex;
+								NcDbObjectId obj_id;
+								NcGePoint3d location;
 
-								DrawPolyline();
+								QTableWidgetItem* item = ui.tableWidget->item(row, column);
+								QString val_qs = item->text();
+								double val = val_qs.toDouble();
+
+								for (int vertex_num = 0; ((!iterator->done())&&(vertex_num <= row)); vertex_num++, iterator->step())
+								{
+									if (vertex_num == row) {
+										obj_id = iterator->objectId();
+										status = ncdbOpenObject(vertex, obj_id, NcDb::kForWrite);
+
+										location = vertex->position();
+
+										if (column == 0) { //x
+											location.x = val;
+										}
+										else if (column == 1) { //y
+											location.y = val;
+										}
+										else { //z
+											location.z = val;
+										}
+										status = vertex->setPosition(location);
+										int a = 100;
+										status = vertex->close();
+									}
+								}
+								delete iterator;
 							}
 						}
 					}

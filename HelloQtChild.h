@@ -24,7 +24,7 @@ public:
 private slots:
 	void DrawPolyline();
 	void SelectPolyline();
-	void UpdatePolyline();
+	void UpdatePolyline(int row, int column);
 private:
     Ui::HelloQtChildClass ui;
 };
