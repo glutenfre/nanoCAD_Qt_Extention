@@ -1,22 +1,32 @@
 #include "stdafx.h"
 #include "HelloQtChild.h"
+#include <string>
+
+Mediator mediator;
 
 HelloQtChild::HelloQtChild(QWidget *parent)
   : QWidget(parent)
 {
   ui.setupUi(this);
-
+  mediator.SetUI(&ui);
   QObject::connect(ui.pushButton, SIGNAL(clicked()), this, SLOT(DrawPolyline()));
+  QObject::connect(ui.tableWidget, SIGNAL(cellChanged(int, int)), this, SLOT(UpdatePolyline()));
 }
 
 HelloQtChild::~HelloQtChild()
-{}
+{
+}
+
+void HelloQtChild::SelectPolyline()
+{
+	NcEditorReactor reactor;
+	reactor.pickfirstModified();
+}
 
 void HelloQtChild::DrawPolyline()
 {
 	NcDb::Poly3dType type = NcDb::Poly3dType::k3dSimplePoly;
-	NcGePoint3dArray vertices; //NcArray< NcGePoint3d >
-	//NcDb3dPolylineVertex* vertex;
+	NcGePoint3dArray vertices;
 	NRX::Boolean closed = NRX::kFalse;
 
 	for (int i = 0; i < ui.tableWidget->rowCount(); i++) {
@@ -53,10 +63,6 @@ void HelloQtChild::DrawPolyline()
 
 	NcDb3dPolyline* polyline = new NcDb3dPolyline(type, vertices, closed);
 
-	/*NcGePoint3d startPt(4.0, 2.0, 0.0);
-	NcGePoint3d endPt(10.0, 7.0, 0.0);
-	NcDbLine* pLine = new NcDbLine(startPt, endPt);*/
-
 	NcDbBlockTable* pBlockTable;
 	ncdbHostApplicationServices()->workingDatabase()
 		->getSymbolTable(pBlockTable, NcDb::kForRead);
@@ -65,9 +71,155 @@ void HelloQtChild::DrawPolyline()
 		NcDb::kForWrite);
 	pBlockTable->close();
 	AcDbObjectId lineId;
-	//NcDbEntity e = static_cast<NcDbEntity>(polyline);
 	pBlockTableRecord->appendNcDbEntity(lineId, polyline);
 	pBlockTableRecord->close();
-	//pLine.close();
 	polyline->close();
+}
+
+void HelloQtChild::UpdatePolyline()
+{
+	bool first_found = false;
+	nds_name ss;
+	int status = ncedSSGet(L"I", NULL, NULL, NULL, ss);
+
+	if (status == RTNORM) {
+		long length = 0;
+		if ((ncedSSLength(ss, &length) != RTNORM) && (length == 0)) {
+			ncedSSFree(ss);
+		}
+		else {
+			nds_name ent;
+			NcDbObjectId id = NcDbObjectId::kNull;
+
+			for (long i = 0; i < length; i++) {
+				if (!first_found) {
+					if (ncedSSName(ss, i, ent) == RTNORM) {
+						if (ncdbGetObjectId(id, ent) == Nano::ErrorStatus::eOk) {
+							if (id.objectClass() == NcDb3dPolyline::desc()) {
+								first_found = true;
+								NcDb3dPolyline* polyline;
+								Nano::ErrorStatus status = ncdbOpenObject(polyline, id, NcDb::kForWrite);
+
+								status = polyline->erase();
+								status = polyline->close();
+
+								DrawPolyline();
+							}
+						}
+					}
+				}
+			}
+		}
+		ncedSSFree(ss);
+	}
+}
+
+MyReactor::MyReactor(const bool autoInitAndRelease)
+{
+	mediator_ = &mediator;
+	m_autoInitAndRelease = autoInitAndRelease;
+	if (m_autoInitAndRelease)
+		if (NULL != ncedEditor)
+			acedEditor->addReactor(this);
+		else
+			m_autoInitAndRelease = false;
+}
+
+MyReactor::~MyReactor()
+{
+	if (m_autoInitAndRelease)
+		if (NULL != ncedEditor)
+			ncedEditor->removeReactor(this);
+}
+
+void MyReactor::pickfirstModified()
+{
+    bool first_found = false;
+	nds_name ss;
+	int status = ncedSSGet(L"I", NULL, NULL, NULL, ss);
+
+	if (status == RTNORM) {
+		long length = 0;
+		if ((ncedSSLength(ss, &length) != RTNORM) && (length == 0)) {
+			ncedSSFree(ss);
+		}
+		else {
+			nds_name ent;
+			NcDbObjectId id = NcDbObjectId::kNull;
+
+			for (long i = 0; i < length; i++) {
+				if (!first_found) {
+					if (ncedSSName(ss, i, ent) == RTNORM) {
+						if (ncdbGetObjectId(id, ent) == Nano::ErrorStatus::eOk) {
+							if (id.objectClass() == NcDb3dPolyline::desc()) {
+								first_found = true;
+								NcDb3dPolyline* polyline;
+								ncdbOpenObject(polyline, id, NcDb::kForRead);
+								NcDbObjectIterator* iterator = polyline->vertexIterator();
+								NcDb3dPolylineVertex* vertex;
+								NcGePoint3d location;
+								NcDbObjectId obj_id;
+
+								mediator_->ClearTable();
+
+								for (int vertex_num = 0; !iterator->done();
+									vertex_num++, iterator->step())
+								{
+									obj_id = iterator->objectId();
+									ncdbOpenObject(vertex, obj_id,
+										NcDb::kForRead);
+									location = vertex->position();
+									vertex->close();
+									mediator_->UpdateTable(vertex_num, location);
+								}
+								polyline->close();
+								delete iterator;
+							}
+						}
+					}
+
+				}
+			}
+		}
+		ncedSSFree(ss);
+	}
+}
+
+void Mediator::SetUI(Ui::HelloQtChildClass* ui)
+{
+	med_ui_ = ui;
+}
+
+void Mediator::UpdateTable(long row, NcGePoint3d value)
+{
+	med_ui_->tableWidget->blockSignals(true);
+	QTableWidgetItem* item_x = new QTableWidgetItem;
+	std::string str = std::to_string(value.x);
+	item_x->setText(str.c_str());
+	med_ui_->tableWidget->setItem(row, 0, item_x);
+	QTableWidgetItem* item_y = new QTableWidgetItem;
+	str = std::to_string(value.y);
+	item_y->setText(str.c_str());
+	med_ui_->tableWidget->setItem(row, 1, item_y);
+	QTableWidgetItem* item_z = new QTableWidgetItem;
+	str = std::to_string(value.z);
+	item_z->setText(str.c_str());
+	med_ui_->tableWidget->setItem(row, 2, item_z);
+	med_ui_->tableWidget->blockSignals(false);
+}
+
+void Mediator::ClearTable()
+{
+	med_ui_->tableWidget->blockSignals(true);
+	QTableWidgetItem* item = NULL;
+	std::string empty_s;
+	for (int i = 0; i < med_ui_->tableWidget->rowCount(); i++) {
+		for (int j = 0; j < med_ui_->tableWidget->columnCount(); j++) {
+			item = med_ui_->tableWidget->item(i, j);
+			if (item != NULL) {
+				item->setText(empty_s.c_str());
+			}
+		}
+	}
+	med_ui_->tableWidget->blockSignals(false);
 }

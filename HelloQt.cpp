@@ -5,6 +5,7 @@
 #include "HelloQtChild.h"
 
 hostUiPaletteSet* m_pPalSet = NULL;
+MyReactor* reactor = NULL;
 
 HINSTANCE _hdllInstance =NULL ;
 AC_IMPLEMENT_EXTENSION_MODULE(theArxDLL);
@@ -84,18 +85,19 @@ void helloQtPaletteCmd()
 
 void initApp()
 {
-
-  acedRegCmds->addCommand(L"HELLOQT_GROUP",
+   reactor = new MyReactor();
+   ncedEditor->addReactor(reactor);
+   ncedRegCmds->addCommand(L"HELLOQT_GROUP",
                           L"_HELLOQTPALETTE",
                           L"HELLOQTPALETTE",
-                          ACRX_CMD_TRANSPARENT,
+                          NCRX_CMD_TRANSPARENT,
                           helloQtPaletteCmd);
 }
 
 void uninitApp()
 {
-  acedRegCmds->removeGroup(L"HELLOQT_GROUP");
-
+  ncedRegCmds->removeGroup(L"HELLOQT_GROUP");
+  ncedEditor->removeReactor(reactor);
   if (m_pPalSet)
   {
     m_pPalSet->DestroyWindow();
